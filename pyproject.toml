@@ -26,8 +26,8 @@ dev = [
 [project.urls]
 Repository = "https://github.com/rlemke/fwh_genomics"
 
-[project.entry-points."facetwork.examples"]
-genomics = "genomics:example"
+[project.entry-points."facetwork.domains"]
+genomics = "genomics:domain"
 
 [tool.setuptools.packages.find]
 where = ["src"]
