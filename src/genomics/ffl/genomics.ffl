@@ -99,53 +99,53 @@ namespace genomics.Facets {
     /** Downloads and indexes a reference genome for a given assembly build. */
     event facet IngestReference(
         reference_build: String
-    ) => (result: ReferenceBundle)
+    ) => (result: ReferenceBundle) with Timeout(minutes = 180) with Effect(kind = "external") with Cost(tier = "expensive")
 
     /** Trims adapters and filters low-quality reads from paired-end FASTQ inputs. */
     event facet QcReads(
         sample_id: String,
         r1_uri: String,
         r2_uri: String
-    ) => (result: QcReport)
+    ) => (result: QcReport) with Timeout(minutes = 30) with Effect(kind = "io") with Cost(tier = "moderate")
 
     /** Aligns cleaned reads to a reference genome, producing a sorted BAM. */
     event facet AlignReads(
         sample_id: String,
         clean_fastq_path: String,
         reference_build: String
-    ) => (result: AlignmentResult)
+    ) => (result: AlignmentResult) with Timeout(minutes = 240) with Effect(kind = "external") with Cost(tier = "expensive")
 
     /** Runs haplotype-based variant calling on a single sample BAM. */
     event facet CallVariants(
         sample_id: String,
         bam_path: String,
         reference_build: String
-    ) => (result: VariantResult)
+    ) => (result: VariantResult) with Timeout(minutes = 240) with Effect(kind = "external") with Cost(tier = "expensive")
 
     /** Merges per-sample gVCFs into a joint-called cohort VCF. */
     event facet JointGenotype(
         gvcf_dir: String,
         reference_build: String,
         sample_count: Long
-    ) => (result: CohortVariantResult)
+    ) => (result: CohortVariantResult) with Timeout(minutes = 240) with Effect(kind = "external") with Cost(tier = "expensive")
 
     /** Left-aligns, decomposes, and quality-filters cohort variants. */
     event facet NormalizeFilter(
         vcf_path: String,
         reference_build: String
-    ) => (result: CohortVariantResult)
+    ) => (result: CohortVariantResult) with Timeout(minutes = 60) with Effect(kind = "external") with Cost(tier = "moderate")
 
     /** Adds gene, consequence, and population-frequency annotations to variants. */
     event facet Annotate(
         vcf_path: String,
         annotation_path: String
-    ) => (result: AnnotationResult)
+    ) => (result: AnnotationResult) with Timeout(minutes = 120) with Effect(kind = "external") with Cost(tier = "expensive")
 
     /** Computes summary statistics and QC metrics across the full cohort. */
     event facet CohortAnalytics(
         variant_table_path: String,
         dataset_id: String
-    ) => (result: CohortStatsResult)
+    ) => (result: CohortStatsResult) with Timeout(minutes = 30) with Effect(kind = "io") with Cost(tier = "moderate")
 
     /** Packages annotated variants, QC reports, and statistics for delivery. */
     event facet Publish(
@@ -153,7 +153,7 @@ namespace genomics.Facets {
         qc_report_path: String,
         stats_path: String,
         dataset_id: String
-    ) => (result: AnalysisPackage)
+    ) => (result: AnalysisPackage) with Effect(kind = "io") with Cost(tier = "moderate")
 }
 
 // -----------------------------------------------------------------------

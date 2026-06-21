@@ -14,6 +14,7 @@ keywords = ["facetwork", "ffl", "genomics", "bioinformatics", "variant-calling",
 
 dependencies = [
     "facetwork>=0.31.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +37,7 @@ where = ["src"]
 genomics = [
     "ffl/*.ffl",
     "ffl/*.json",
+    "catalog.yaml",
 ]
 
 [tool.ruff]

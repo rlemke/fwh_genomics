@@ -12,21 +12,21 @@ namespace genomics.cache.Resolve {
     event facet ResolveReference(
         name: String,
         prefer_source: String = ""
-    ) => (cache: GenomicsCache, resolution: ResourceResolution)
+    ) => (cache: GenomicsCache, resolution: ResourceResolution) with Effect(kind = "pure") with Cost(tier = "cheap")
 
     /** Maps an annotation database name and version to its canonical cache entry. */
     event facet ResolveAnnotation(
         name: String,
         version: String = "latest"
-    ) => (cache: GenomicsCache, resolution: ResourceResolution)
+    ) => (cache: GenomicsCache, resolution: ResourceResolution) with Effect(kind = "pure") with Cost(tier = "cheap")
 
     /** Resolves an SRA accession to its cached FASTQ download. */
     event facet ResolveSample(
         accession: String
-    ) => (cache: GenomicsCache, resolution: ResourceResolution)
+    ) => (cache: GenomicsCache, resolution: ResourceResolution) with Effect(kind = "pure") with Cost(tier = "cheap")
 
     /** Enumerates available genomics resources, optionally filtered by category. */
     event facet ListResources(
         category: String = ""
-    ) => (result: ResourceListResult)
+    ) => (result: ResourceListResult) with Effect(kind = "pure") with Cost(tier = "cheap")
 }

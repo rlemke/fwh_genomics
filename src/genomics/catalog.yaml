@@ -1,0 +1,223 @@
+# Composability manifest for the genomics package.
+#
+# Machine-readable index so an LLM can DISCOVER + REUSE these capabilities by
+# intent, the same way the platform's `fw_catalog_match` (workflow-level,
+# reuse-first) and `fw_capabilities` (facet-level capability index) tools work.
+#
+#   * `workflows` — entry-point facets, each with a natural-language `summary`
+#     (the kind of request it answers), `tags`, and a `param_schema` of the key
+#     parameters. Use these for reuse-first catalog matching: match an NL request
+#     against the summaries/tags before authoring anything new.
+#   * `facets` — a capability index of the core composable primitives by
+#     namespace, with `purpose`, `signature`, and the `effect`/`cost` taken
+#     verbatim from the `with Effect(...) / with Cost(...)` mixins in the FFL.
+#     Compose pipelines from these; prefer pure/cheap primitives. The genomics
+#     processing steps (alignment, variant calling, joint genotyping) model real
+#     aligner/caller subprocesses and reference downloads, so they are
+#     `external` + `expensive` with long timeouts.
+#
+# Accurate qualified names + signatures are sourced from the .ffl under
+# `src/genomics/ffl/`; see `genomics.catalog.load_manifest()`.
+
+version: 1
+package: genomics
+
+workflows:
+  # --- End-to-end cohort analysis --------------------------------------------
+  - qualified_name: genomics.cache.workflows.CachedCohortAnalysis
+    summary: >-
+      Run an end-to-end multi-sample (cohort) variant-analysis pipeline with
+      automatic reference/annotation resolution and caching: resolve a reference
+      genome + dbSNP, build the aligner index, joint-genotype the cohort gVCFs,
+      normalize/filter, annotate, compute statistics, and publish a deliverable
+      package. The preferred entry point for "analyze a cohort by name" because it
+      resolves and caches its own resources.
+    tags: [genomics, cohort, variant-calling, joint-genotyping, annotation, pipeline, cache, end-to-end]
+    entry_point: true
+    param_schema:
+      dataset_id: String
+      reference_name: String
+      accessions: Json
+
+  - qualified_name: genomics.pipeline.CohortAnalysis
+    summary: >-
+      Cohort fan-in: joint-genotype per-sample gVCFs from a directory into one
+      cohort VCF, then normalize/filter, annotate, compute cohort statistics, and
+      publish the analysis package. Use when the gVCFs already exist and the
+      reference build is known (no name resolution); use CachedCohortAnalysis to
+      resolve + cache resources by name.
+    tags: [genomics, cohort, joint-genotyping, annotation, fan-in, publish, vcf]
+    entry_point: true
+    param_schema:
+      dataset_id: String
+      reference_build: String
+      gvcf_dir: String
+
+  - qualified_name: genomics.pipeline.SamplePipeline
+    summary: >-
+      Per-sample fan-out: for each sample in a batch, run QC on its paired-end
+      FASTQ, align the cleaned reads to the reference, and call variants — in
+      parallel across samples — yielding a per-sample gVCF. The upstream half of
+      cohort analysis; feed its gVCFs into CohortAnalysis.
+    tags: [genomics, per-sample, qc, alignment, variant-calling, fanout, foreach, parallel, gvcf]
+    entry_point: true
+    param_schema:
+      samples: Json
+      reference_build: String
+
+  # --- Resource preparation building blocks ----------------------------------
+  - qualified_name: genomics.cache.workflows.PrepareReference
+    summary: >-
+      Resolve a reference genome by friendly name (e.g. "hg38") to its cached
+      FASTA and build an aligner index (default BWA) for it. The "get a reference
+      ready to align against" building block.
+    tags: [genomics, reference-genome, index, bwa, cache, preparation, building-block]
+    entry_point: true
+    param_schema:
+      reference_name: String
+      aligner: String
+
+  - qualified_name: genomics.cache.workflows.PrepareSample
+    summary: >-
+      Resolve an SRA accession to its cached paired-end FASTQ and download/stage
+      it for pipeline processing. The "fetch a sample's reads by accession"
+      building block feeding SamplePipeline.
+    tags: [genomics, sra, sample, fastq, download, cache, preparation, building-block]
+    entry_point: true
+    param_schema:
+      accession: String
+      sample_id: String
+
+facets:
+  # --- genomics.cache.Resolve : name/accession -> canonical cache entry -------
+  - qualified_name: genomics.cache.Resolve.ResolveReference
+    namespace: genomics.cache.Resolve
+    purpose: >-
+      Map a reference-genome alias (e.g. "hg38", "GRCh38") to its canonical
+      cached FASTA entry, with disambiguation.
+    signature: "ResolveReference(name: String, prefer_source: String = \"\") => (cache: GenomicsCache, resolution: ResourceResolution)"
+    effect: pure
+    cost: cheap
+
+  - qualified_name: genomics.cache.Resolve.ResolveAnnotation
+    namespace: genomics.cache.Resolve
+    purpose: >-
+      Map an annotation-database name + version (e.g. "dbsnp", "clinvar") to its
+      canonical cached entry.
+    signature: "ResolveAnnotation(name: String, version: String = \"latest\") => (cache: GenomicsCache, resolution: ResourceResolution)"
+    effect: pure
+    cost: cheap
+
+  - qualified_name: genomics.cache.Resolve.ResolveSample
+    namespace: genomics.cache.Resolve
+    purpose: Resolve an SRA accession to its cached FASTQ download entry.
+    signature: "ResolveSample(accession: String) => (cache: GenomicsCache, resolution: ResourceResolution)"
+    effect: pure
+    cost: cheap
+
+  - qualified_name: genomics.cache.Resolve.ListResources
+    namespace: genomics.cache.Resolve
+    purpose: Enumerate the available genomics resources, optionally filtered by category.
+    signature: "ListResources(category: String = \"\") => (result: ResourceListResult)"
+    effect: pure
+    cost: cheap
+
+  # --- genomics.cache.Operations : download / index / verify -----------------
+  - qualified_name: genomics.cache.Operations.Download
+    namespace: genomics.cache.Operations
+    purpose: Fetch a remote genomics resource (genome / annotation / reads) into the local cache.
+    signature: "Download(cache: GenomicsCache) => (cache: GenomicsCache)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.cache.Operations.Index
+    namespace: genomics.cache.Operations
+    purpose: Build an aligner-specific index from a cached reference genome.
+    signature: "Index(cache: GenomicsCache, aligner: String) => (cache: IndexCache)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.cache.Operations.Validate
+    namespace: genomics.cache.Operations
+    purpose: Verify the integrity of a cached resource against its checksum (reads the file).
+    signature: "Validate(cache: GenomicsCache) => (valid: Boolean, message: String)"
+    effect: io
+    cost: moderate
+
+  - qualified_name: genomics.cache.Operations.Status
+    namespace: genomics.cache.Operations
+    purpose: Report the on-disk status, size, and date of a cached resource (metadata only).
+    signature: "Status(cache: GenomicsCache) => (status: String, size: Long, date: String)"
+    effect: io
+    cost: cheap
+
+  - qualified_name: genomics.cache.Operations.Checksum
+    namespace: genomics.cache.Operations
+    purpose: Compute a cryptographic checksum for a cached resource file.
+    signature: "Checksum(cache: GenomicsCache) => (checksum: String, algorithm: String)"
+    effect: io
+    cost: moderate
+
+  # --- genomics.Facets : the cohort pipeline stages --------------------------
+  - qualified_name: genomics.Facets.IngestReference
+    namespace: genomics.Facets
+    purpose: Download and index a reference genome for a given assembly build.
+    signature: "IngestReference(reference_build: String) => (result: ReferenceBundle)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.Facets.QcReads
+    namespace: genomics.Facets
+    purpose: Trim adapters and filter low-quality reads from paired-end FASTQ inputs.
+    signature: "QcReads(sample_id: String, r1_uri: String, r2_uri: String) => (result: QcReport)"
+    effect: io
+    cost: moderate
+
+  - qualified_name: genomics.Facets.AlignReads
+    namespace: genomics.Facets
+    purpose: Align cleaned reads to a reference genome (aligner subprocess), producing a sorted BAM.
+    signature: "AlignReads(sample_id: String, clean_fastq_path: String, reference_build: String) => (result: AlignmentResult)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.Facets.CallVariants
+    namespace: genomics.Facets
+    purpose: Run haplotype-based variant calling on a single sample BAM (caller subprocess).
+    signature: "CallVariants(sample_id: String, bam_path: String, reference_build: String) => (result: VariantResult)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.Facets.JointGenotype
+    namespace: genomics.Facets
+    purpose: Merge per-sample gVCFs into a joint-called cohort VCF (joint genotyping).
+    signature: "JointGenotype(gvcf_dir: String, reference_build: String, sample_count: Long) => (result: CohortVariantResult)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.Facets.NormalizeFilter
+    namespace: genomics.Facets
+    purpose: Left-align, decompose, and quality-filter cohort variants (bcftools subprocess).
+    signature: "NormalizeFilter(vcf_path: String, reference_build: String) => (result: CohortVariantResult)"
+    effect: external
+    cost: moderate
+
+  - qualified_name: genomics.Facets.Annotate
+    namespace: genomics.Facets
+    purpose: Add gene, consequence, and population-frequency annotations to variants (VEP + annotation DB).
+    signature: "Annotate(vcf_path: String, annotation_path: String) => (result: AnnotationResult)"
+    effect: external
+    cost: expensive
+
+  - qualified_name: genomics.Facets.CohortAnalytics
+    namespace: genomics.Facets
+    purpose: Compute summary statistics and QC metrics across the full cohort (in-process over the variant table).
+    signature: "CohortAnalytics(variant_table_path: String, dataset_id: String) => (result: CohortStatsResult)"
+    effect: io
+    cost: moderate
+
+  - qualified_name: genomics.Facets.Publish
+    namespace: genomics.Facets
+    purpose: Package annotated variants, QC reports, and statistics into a deliverable bundle.
+    signature: "Publish(variant_table_path: String, qc_report_path: String, stats_path: String, dataset_id: String) => (result: AnalysisPackage)"
+    effect: io
+    cost: moderate

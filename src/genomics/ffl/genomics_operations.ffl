@@ -18,13 +18,13 @@ namespace genomics.cache.Operations {
     use genomics.cache.types
 
     /** Fetches a remote genomics resource into the local cache. */
-    event facet Download(cache: GenomicsCache) => (cache: GenomicsCache)
+    event facet Download(cache: GenomicsCache) => (cache: GenomicsCache) with Timeout(minutes = 120) with Effect(kind = "external") with Cost(tier = "expensive")
     /** Builds an aligner-specific index from a cached reference genome. */
-    event facet Index(cache: GenomicsCache, aligner: String) => (cache: IndexCache)
+    event facet Index(cache: GenomicsCache, aligner: String) => (cache: IndexCache) with Timeout(minutes = 180) with Effect(kind = "external") with Cost(tier = "expensive")
     /** Verifies the integrity of a cached resource against its checksum. */
-    event facet Validate(cache: GenomicsCache) => (valid: Boolean, message: String)
+    event facet Validate(cache: GenomicsCache) => (valid: Boolean, message: String) with Effect(kind = "io") with Cost(tier = "moderate")
     /** Reports the current on-disk status, size, and date of a cached resource. */
-    event facet Status(cache: GenomicsCache) => (status: String, size: Long, date: String)
+    event facet Status(cache: GenomicsCache) => (status: String, size: Long, date: String) with Effect(kind = "io") with Cost(tier = "cheap")
     /** Computes a cryptographic checksum for a cached resource file. */
-    event facet Checksum(cache: GenomicsCache) => (checksum: String, algorithm: String)
+    event facet Checksum(cache: GenomicsCache) => (checksum: String, algorithm: String) with Effect(kind = "io") with Cost(tier = "moderate")
 }
