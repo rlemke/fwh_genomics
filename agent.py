@@ -12,11 +12,11 @@ Usage:
     PYTHONPATH=. python examples/genomics/agent.py
 
 For Docker/MongoDB mode, set environment variables:
-    AFL_MONGODB_URL=mongodb://localhost:27017
-    AFL_MONGODB_DATABASE=facetwork
+    FW_MONGODB_URL=mongodb://localhost:27017
+    FW_MONGODB_DATABASE=facetwork
 
 For RegistryRunner mode:
-    AFL_USE_REGISTRY=1
+    FW_USE_REGISTRY=1
 """
 
 from facetwork.runtime.agent_runner import AgentConfig, run_agent

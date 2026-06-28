@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 
 # Configurable cache base directory (supports hdfs:// URIs)
-CACHE_BASE = os.environ.get("AFL_GENOMICS_CACHE_DIR", "/cache")
+CACHE_BASE = os.environ.get("FW_GENOMICS_CACHE_DIR", "/cache")
 
 
 # Registry: namespace -> {facet_name -> (url, path, size_bytes, resource_type)}
