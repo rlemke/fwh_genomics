@@ -65,49 +65,60 @@ def _call_variants_handler(payload: dict) -> dict[str, Any]:
 
 
 def _joint_genotype_handler(payload: dict) -> dict[str, Any]:
-    """Joint genotype across a cohort of gVCFs."""
-    cohort_id = payload.get("cohort_id", "unknown")
+    """Joint genotype across a cohort of gVCFs (facet ``JointGenotype``)."""
+    gvcf_dir = payload.get("gvcf_dir", "/gvcf")
+    reference_build = payload.get("reference_build", "GRCh38")
+    sample_count = payload.get("sample_count", 100)
     step_log = payload.get("_step_log")
     if step_log:
-        step_log(f"JointGenotype: cohort {cohort_id}")
-    return {"result": joint_genotype(cohort_id=cohort_id)}
+        step_log(f"JointGenotype: {sample_count} gVCFs from {gvcf_dir}")
+    return {"result": joint_genotype(
+        gvcf_dir=gvcf_dir, reference_build=reference_build, sample_count=sample_count)}
 
 
 def _normalize_filter_handler(payload: dict) -> dict[str, Any]:
-    """Normalize and filter a joint-called VCF."""
+    """Normalize and filter a joint-called VCF (facet ``NormalizeFilter``)."""
     vcf_path = payload.get("vcf_path", "/vcf/cohort.vcf.gz")
+    reference_build = payload.get("reference_build", "GRCh38")
     step_log = payload.get("_step_log")
     if step_log:
         step_log(f"NormalizeFilter: {vcf_path}")
-    return {"result": normalize_filter(vcf_path=vcf_path)}
+    return {"result": normalize_filter(vcf_path=vcf_path, reference_build=reference_build)}
 
 
 def _annotate_handler(payload: dict) -> dict[str, Any]:
-    """Annotate a VCF with functional consequences."""
+    """Annotate a VCF with functional consequences (facet ``Annotate``)."""
     vcf_path = payload.get("vcf_path", "/vcf/cohort.norm.vcf.gz")
+    annotation_path = payload.get("annotation_path", "/ref/annotations.gff")
     step_log = payload.get("_step_log")
     if step_log:
         step_log(f"Annotate: {vcf_path}")
-    return {"result": annotate(vcf_path=vcf_path)}
+    return {"result": annotate(vcf_path=vcf_path, annotation_path=annotation_path)}
 
 
 def _cohort_analytics_handler(payload: dict) -> dict[str, Any]:
-    """Run cohort-level analytics on annotated variants."""
-    cohort_id = payload.get("cohort_id", "unknown")
+    """Run cohort-level analytics on annotated variants (facet ``CohortAnalytics``)."""
+    variant_table_path = payload.get("variant_table_path", "/vcf/cohort.annotated.tsv")
+    dataset_id = payload.get("dataset_id", "cohort")
     step_log = payload.get("_step_log")
     if step_log:
-        step_log(f"CohortAnalytics: {cohort_id}")
-    return {"result": cohort_analytics(cohort_id=cohort_id)}
+        step_log(f"CohortAnalytics: {dataset_id}")
+    return {"result": cohort_analytics(
+        variant_table_path=variant_table_path, dataset_id=dataset_id)}
 
 
 def _publish_handler(payload: dict) -> dict[str, Any]:
-    """Publish the final cohort report bundle."""
-    cohort_id = payload.get("cohort_id", "unknown")
-    report_dir = payload.get("report_dir", "/reports/")
+    """Publish the final cohort analysis bundle (facet ``Publish``)."""
+    variant_table_path = payload.get("variant_table_path", "/vcf/cohort.annotated.tsv")
+    qc_report_path = payload.get("qc_report_path", "/reports/qc_report.html")
+    stats_path = payload.get("stats_path", "/reports/cohort_stats.json")
+    dataset_id = payload.get("dataset_id", "cohort")
     step_log = payload.get("_step_log")
     if step_log:
-        step_log(f"Publish: {cohort_id} -> {report_dir}")
-    return {"result": publish(cohort_id=cohort_id, report_dir=report_dir)}
+        step_log(f"Publish: {dataset_id}")
+    return {"result": publish(
+        variant_table_path=variant_table_path, qc_report_path=qc_report_path,
+        stats_path=stats_path, dataset_id=dataset_id)}
 
 
 # RegistryRunner dispatch adapter

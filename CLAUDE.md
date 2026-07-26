@@ -4,14 +4,14 @@ This repository is a **standalone Facetwork example package**. The Facetwork
 platform (workflow compiler + runtime) lives at
 `/Users/ralph_lemke/facetwork`; this repo only contains the genomics-specific
 FFL, handlers, and tools. The two are wired together via the
-`facetwork.examples` entry point in `pyproject.toml`.
+`facetwork.domains` entry point in `pyproject.toml`.
 
 ## Quick orientation
 
 ```
 fwh_genomics/
-├── pyproject.toml                       # declares the facetwork.examples entry point
-├── src/genomics/__init__.py             # exports `example: ExamplePackage`
+├── pyproject.toml                       # declares the facetwork.domains entry point
+├── src/genomics/__init__.py             # exports `domain: DomainPackage`
 ├── src/genomics/handlers/               # 5 modules + shared/ shim
 ├── src/genomics/ffl/                    # 7 FFL files
 ├── src/genomics/tools/                  # CLI utilities + _lib/ (simulators)
@@ -26,8 +26,8 @@ fwh_genomics/
 pip install -e .
 
 # From a Facetwork checkout:
-scripts/seed-examples --include genomics
-scripts/start-runner --example genomics -- --log-format text
+fw ffl seed --include genomics
+fw runner start --domain genomics -- --log-format text
 
 # Run as a standalone agent
 PYTHONPATH=src python agent.py
@@ -98,7 +98,7 @@ a registered handler for it.
 4. Add a handler to the right `handlers/<name>_handlers.py` and wire
    it into `_DISPATCH`.
 5. Drop the FFL declaration into `src/genomics/ffl/`.
-6. Re-run `scripts/seed-examples --include genomics` so the new flow
+6. Re-run `fw ffl seed --include genomics` so the new flow
    shows up in the dashboard.
 
 ## Code review checklist

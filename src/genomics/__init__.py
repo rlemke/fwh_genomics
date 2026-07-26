@@ -18,7 +18,7 @@ point declared in ``pyproject.toml``::
     genomics = "genomics:domain"
 
 Once ``pip install -e .`` has been run from this repository, Facetwork's
-``scripts/start-runner --example genomics`` and ``scripts/seed-examples``
+``fw runner start --domain genomics`` and ``fw ffl seed``
 will pick this package up automatically.
 """
 

@@ -6,9 +6,9 @@ samples:
 
 - **Per-sample pipeline** — QC → Align → CallVariants for FASTQ to gVCF
 - **Cohort analysis** — joint genotyping → normalization → annotation → analytics → publish
-- **Resource cache** — 250+ factory-built handlers for reference genomes, annotation tracks, example samples
+- **Resource cache** — 17 factory-built handlers for reference genomes (5), annotation tracks (7), and SRA samples (5)
 - **Resolve + Operations** — name-based lookup of cached resources plus a small operations API (download, index, validate, status, checksum)
-- **18 simulator handlers** across `genomics.Facets`, `genomics.cache.<aligner>`, `genomics.cache.Operations`, `genomics.cache.Resolve`
+- **45 registered simulator handlers total** — 9 pipeline (`genomics.Facets`), 17 resource cache, 10 aligner-index (`genomics.cache.<aligner>`), 5 `genomics.cache.Operations`, 4 `genomics.cache.Resolve`
 
 All handlers are deterministic simulators that return realistic shapes
 without actually running fastp / bwa / GATK / VEP — so the example runs
@@ -29,9 +29,9 @@ the full index is in [`docs/README.md`](docs/README.md).
 | **Resource cache & resolution** | [resource-cache](docs/resource-cache.md) · [aligner-indexes](docs/aligner-indexes.md) · [cache-operations](docs/cache-operations.md) · [resource-resolution](docs/resource-resolution.md) |
 | **Composition** | [composed-workflows](docs/composed-workflows.md) |
 
-Discovered by the Facetwork runner via the `facetwork.examples` entry point
+Discovered by the Facetwork runner via the `facetwork.domains` entry point
 declared in `pyproject.toml`. After `pip install -e .`, Facetwork's
-`scripts/start-runner --example genomics` and `scripts/seed-examples`
+`fw runner start --domain genomics` and `fw ffl seed`
 pick this package up automatically.
 
 ## Install
@@ -45,8 +45,8 @@ pip install -e .
 ## Run from a Facetwork checkout
 
 ```bash
-scripts/seed-examples --include genomics                  # one-time, seeds FFL
-scripts/start-runner --example genomics -- --log-format text
+fw ffl seed --include genomics                  # one-time, seeds FFL
+fw runner start --domain genomics -- --log-format text
 ```
 
 ## Run a single pipeline step from the command line
@@ -75,7 +75,7 @@ human-readable summary on stderr.
 
 ```
 fwh_genomics/
-├── pyproject.toml                  # facetwork.examples entry point
+├── pyproject.toml                  # facetwork.domains entry point
 ├── README.md
 ├── CLAUDE.md                       # guidance for Claude Code in this repo
 ├── USER_GUIDE.md                   # human-facing walkthrough
@@ -83,7 +83,7 @@ fwh_genomics/
 ├── agent.py                        # standalone AgentPoller variant
 ├── tests/                          # mocked + real test trees
 └── src/genomics/
-    ├── __init__.py                 # exports `example: ExamplePackage`
+    ├── __init__.py                 # exports `domain: DomainPackage`
     ├── handlers/                   # 5 event-facet modules + shared/ shim
     │   ├── genomics_handlers.py    # 9 facets: QC, Align, CallVariants, …
     │   ├── operations_handlers.py  # 5 ops: download, index, validate, status, checksum
