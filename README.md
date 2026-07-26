@@ -14,6 +14,21 @@ All handlers are deterministic simulators that return realistic shapes
 without actually running fastp / bwa / GATK / VEP — so the example runs
 fully offline.
 
+## Feature specifications
+
+Every genomics feature has a spec in [**`docs/`**](docs/README.md) — how it works,
+whether/how it **fans out**, the **schemas & registry data** it uses, the
+**external libraries** it relies on (mostly none — this is a simulator), its
+**facets & workflows**, and its **cache/output**. Start with the flagship
+[**Pipeline**](docs/pipeline.md) (the two-shape cohort variant-calling workflow);
+the full index is in [`docs/README.md`](docs/README.md).
+
+| Area | Specs |
+|------|-------|
+| **Flagship — core pipeline** | [pipeline](docs/pipeline.md) |
+| **Resource cache & resolution** | [resource-cache](docs/resource-cache.md) · [aligner-indexes](docs/aligner-indexes.md) · [cache-operations](docs/cache-operations.md) · [resource-resolution](docs/resource-resolution.md) |
+| **Composition** | [composed-workflows](docs/composed-workflows.md) |
+
 Discovered by the Facetwork runner via the `facetwork.examples` entry point
 declared in `pyproject.toml`. After `pip install -e .`, Facetwork's
 `scripts/start-runner --example genomics` and `scripts/seed-examples`
