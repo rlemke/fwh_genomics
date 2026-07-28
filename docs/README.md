@@ -34,6 +34,7 @@ germline cohort variant-calling pipeline (`SamplePipeline` `foreach` fan-out +
 | Spec | What it covers |
 |------|----------------|
 | [composed-workflows.md](composed-workflows.md) | FFL-only cache-aware entry points: `PrepareReference`, `PrepareSample`, and `CachedCohortAnalysis` (resolve + cache + index + full cohort analysis in one call). |
+| [ffl-examples.md](ffl-examples.md) | **Usage patterns.** A gallery of complete, compile-checked FFL examples over these facets — per-sample chain, cohort `foreach` fan-out + joint-genotype fan-in, cache warming, `when` QC gates, `catch`, long-run `Timeout` overrides. |
 
 ---
 

@@ -14,6 +14,51 @@ All handlers are deterministic simulators that return realistic shapes
 without actually running fastp / bwa / GATK / VEP — so the example runs
 fully offline.
 
+## FFL at a glance
+
+The pipeline is written in [FFL](https://github.com/rlemke/facetwork/blob/main/docs/reference/language/grammar.md),
+Facetwork's workflow language. A step is `name = Facet(args)`; each step that
+references the previous one is ordered behind it, and `andThen foreach` fans the
+per-sample chain out across the fleet:
+
+```ffl
+namespace my.genomics {
+
+    use genomics.Facets
+
+    /** One QC→align→call chain per sample, all samples in parallel. */
+    workflow CohortSamples(samples: Json, reference_build: String = "GRCh38") => (gvcfs: [String]) andThen foreach s in $.samples {
+
+        qc = genomics.Facets.QcReads(
+            sample_id = $.s.sample_id, r1_uri = $.s.r1_uri, r2_uri = $.s.r2_uri)
+
+        aln = genomics.Facets.AlignReads(
+            sample_id = $.s.sample_id,
+            clean_fastq_path = qc.result.clean_fastq_path,
+            reference_build = $.reference_build)
+
+        var = genomics.Facets.CallVariants(
+            sample_id = $.s.sample_id,
+            bam_path = aln.result.bam_path,
+            reference_build = $.reference_build)
+
+        yield CohortSamples(gvcfs = [var.result.gvcf_path])
+    }
+}
+```
+
+```bash
+fw ffl run --primary my.ffl --library src/genomics/ffl/genomics.ffl \
+  --workflow my.genomics.CohortSamples \
+  --inputs '{"samples": [{"sample_id": "NA12878", "r1_uri": "…", "r2_uri": "…"}]}'
+```
+
+📖 **[docs/ffl-examples.md](docs/ffl-examples.md)** — the full example gallery:
+the per-sample chain, cohort fan-out/fan-in, warming the `genomics.cache.*`
+bundles in parallel, `when` QC gates that avoid four wasted hours of alignment,
+`catch` per sample, and call-time `Timeout`/`Retry` for deep-coverage runs. Every
+snippet there is compile-checked.
+
 ## Feature specifications
 
 Every genomics feature has a spec in [**`docs/`**](docs/README.md) — how it works,
