@@ -1,6 +1,6 @@
 # Genomics Cohort Analysis — User Guide
 
-> See also: [Examples Guide](../doc/GUIDE.md) | [README](README.md)
+> See also: [Examples Guide](https://github.com/rlemke/facetwork/blob/main/examples/doc/GUIDE.md) | [README](README.md)
 
 ## When to Use This Example
 
@@ -82,17 +82,21 @@ This is a pure linear chain — each step depends on the previous step's output.
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Compile check
-for f in examples/genomics/ffl/*.ffl; do
-    python -m afl.cli "$f" --check && echo "OK: $f"
-done
+# Compile check (the files `use` each other, so check them together)
+fw ffl compile --check \
+    --primary src/genomics/ffl/genomics.ffl \
+    --primary src/genomics/ffl/genomics_cache_workflows.ffl \
+    --library src/genomics/ffl/genomics_cache_types.ffl \
+    --library src/genomics/ffl/genomics_cache.ffl \
+    --library src/genomics/ffl/genomics_index_cache.ffl \
+    --library src/genomics/ffl/genomics_operations.ffl \
+    --library src/genomics/ffl/genomics_resolve.ffl
 
 # Run the agent
-PYTHONPATH=. python examples/genomics/agent.py
+PYTHONPATH=src python agent.py
 
 # Run integration tests
-PYTHONPATH=. python examples/genomics/test_cohort_analysis.py
-PYTHONPATH=. python examples/genomics/test_cache_pipeline.py
+pytest tests/mocked/py/test_cohort_analysis.py tests/mocked/py/test_cache_pipeline.py -v
 ```
 
 ## Key Concepts
@@ -268,6 +272,6 @@ workflow DataPipeline(items: Json) => (result: String, item_id: String) andThen 
 
 ## Next Steps
 
-- **[jenkins](../jenkins/USER_GUIDE.md)** — add retry, timeout, and other cross-cutting concerns to your steps
-- **[aws-lambda](../aws-lambda/USER_GUIDE.md)** — combine foreach with mixin composition and real cloud calls
-- **[osm-geocoder](../osm-geocoder/USER_GUIDE.md)** — see a large-scale agent with 580+ handlers
+- **[jenkins](https://github.com/rlemke/fwh_jenkins/blob/main/USER_GUIDE.md)** — add retry, timeout, and other cross-cutting concerns to your steps
+- **[aws-lambda](https://github.com/rlemke/facetwork/blob/main/examples/aws-lambda/USER_GUIDE.md)** — combine foreach with mixin composition and real cloud calls
+- **[osm-geocoder](https://github.com/rlemke/fwh_osm/blob/main/USER_GUIDE.md)** — see a large-scale agent with 580+ handlers
